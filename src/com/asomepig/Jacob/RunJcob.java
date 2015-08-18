@@ -141,7 +141,7 @@ public class RunJcob {
         System.out.println("请选择生成文档的版本（1.两图的版本，2.一张图版本。默认1）\n（1或者2）默认2："); 
         while (true) { 
                 String line = s.nextLine(); 
-                if (line.equals("2"))
+                if (line.equals("2") || line.equals(""))
                 {
                 	res = true;
                 	System.out.println("您已选择版本>>>2"); 

@@ -3,6 +3,7 @@ package com.asomepig.Jacob;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Scanner;
 
 import jxl.Sheet;
 import jxl.Workbook;
@@ -28,47 +29,63 @@ public class RunJcob {
 		
 	}
 	public void startIt(){
+		boolean ifVersion2 = false;
+		ifVersion2 = this.getUserChoose();
 		String sp = File.separator;
 		String rootPath = System.getProperty("user.dir");
 		String pics = rootPath+sp+"pic"+sp+"pics"+sp;
 		String pdfs = rootPath+sp+"pic"+sp+"pdf"+sp;
 		String exl = rootPath+sp+"pic"+sp+"excel"+sp;
-		
 		// 获取图片和pdf文件夹,比较列表
 		try {
 			File pcps = new File(pics);
 			File pfps = new File(pdfs);
 			File exls = new File(exl);
 			// 1.程序先决条件判断
-			if(!pcps.isDirectory() || !pfps.isDirectory() || !exls.isDirectory())
+			if(!pcps.isDirectory() || !exls.isDirectory())
 			{
 				System.out.println("图片文件夹   OR pdf文件夹   OR excel文件夹未准备好,程序终止!");
 				RunJcob.sleep(3,"程序执行失败");
 				return ;
 			}
-			
 			File[] picArr = pcps.listFiles();
-			File[] pdfArr = pfps.listFiles();
+			File[] pdfArr = null;
 			File[] exlArr = exls.listFiles();
-			if(picArr.length!= pdfArr.length)
-			{
-				System.out.println("图片数量与pdf数量不匹配,程序终止!");
-				System.out.println("图片数:"+picArr.length+"  ; pdf数:"+pdfArr.length);
-				RunJcob.sleep(5,"程序执行失败");
-				return ;
-			}else{
-				for (int i = 0; i < picArr.length; i++) {
-					String picIname = picArr[i].getName();
-					picIname = picIname.substring(0, picIname.lastIndexOf("."));
-					String pdfIname = pdfArr[i].getName();
-					pdfIname = pdfIname.substring(0, pdfIname.lastIndexOf("."));
-					if(!pdfIname.equalsIgnoreCase(picIname))
+		
+		/////////////////////////////////////=============两图版本的判断需求，单图版本不需要============////////////////////////////////////////
+				if(!ifVersion2)
+				{
+					if(!pfps.isDirectory())
+	
 					{
-						RunJcob.sleep(5,picIname+".gif <-----> "+pdfIname+".pdf :"+"DotNo不匹配 ");
+						System.out.println("pdf文件夹 未准备好,程序终止!");
+						RunJcob.sleep(3,"程序执行失败");
 						return ;
 					}
+					pdfArr = pfps.listFiles();
+					if(picArr.length!= pdfArr.length)
+					{
+						System.out.println("图片数量与pdf数量不匹配,程序终止!");
+						System.out.println("图片数:"+picArr.length+"  ; pdf数:"+pdfArr.length);
+						RunJcob.sleep(5,"程序执行失败");
+						return ;
+					}else{
+						for (int i = 0; i < picArr.length; i++) {
+							String picIname = picArr[i].getName();
+							picIname = picIname.substring(0, picIname.lastIndexOf("."));
+							String pdfIname = pdfArr[i].getName();
+							pdfIname = pdfIname.substring(0, pdfIname.lastIndexOf("."));
+							if(!pdfIname.equalsIgnoreCase(picIname))
+							{
+								RunJcob.sleep(5,picIname+".gif <-----> "+pdfIname+".pdf :"+"DotNo不匹配 ");
+								return ;
+							}
+						}
+					}
+	
 				}
-			}
+			/////////////////////////////////////=============两图版本的判断需求，单图版本不需要============////////////////////////////////////////
+			
 			if(exlArr.length<1 || (!exlArr[0].getName().endsWith(".xls") && !exlArr[0].getName().endsWith(".xlsx")))
 			{
 				RunJcob.sleep(5,"excel文件不存在\n程序执行失败");
@@ -103,7 +120,7 @@ public class RunJcob {
 						System.err.println(dotno+"的图片不存在!");
 						continue pdfCycle;
 					}
-					Map<String,String> bookmarkResource = jxl.getBookMarkResource(st, dotno.toUpperCase(), pdfArr.length);
+					Map<String,String> bookmarkResource = jxl.getBookMarkResource(st, dotno.toUpperCase(), pdfArr.length,true);
 					this.convertIt(picName,pdfName,bookmarkResource );
 				}
 				
@@ -115,6 +132,28 @@ public class RunJcob {
 		}
 	}
 	
+	/**
+	 * @return true版本2，false版本1
+	 */
+	private boolean getUserChoose() {
+		boolean res = false;
+		Scanner s = new Scanner(System.in); 
+        System.out.println("请选择生成文档的版本（1.两图的版本，2.一张图版本。默认1）\n（1或者2）默认2："); 
+        while (true) { 
+                String line = s.nextLine(); 
+                if (line.equals("2"))
+                {
+                	res = true;
+                	System.out.println("您已选择版本>>>2"); 
+                	break; 
+                }else
+                {
+                	System.out.println("您已选择版本>>>1"); 
+                	break; 
+                }
+        } 
+		return res;
+	}
 	public void convertIt(String picName,String pdfName,Map<String,String> bookMarkResource){
 		String sp = File.separator;
 		SimpleLogService log = new SimpleLogServiceImpl();
@@ -194,7 +233,57 @@ public class RunJcob {
 	}
 	
 	
-	
+	public void convertIt2(String picName,Map<String,String> bookMarkResource){
+		String sp = File.separator;
+		SimpleLogService log = new SimpleLogServiceImpl();
+		String rootPath = System.getProperty("user.dir");
+		String pic = rootPath+sp+"pic"+sp;
+		String target = rootPath+sp+"target"+sp;
+		String source = rootPath+sp+"source"+sp;
+		
+		String pdfNameWithoutSub = bookMarkResource.get("A10");
+		
+		String image1 = pic+"pics"+sp+picName;
+		String imageTarget1 = target+picName;
+		String wordFile = source+"2.doc";
+		String resFilePath = target+pdfNameWithoutSub+".doc";
+		if(!FileUtil.ifFileExists(image1))return ;
+		if(!FileUtil.ifFileExists(wordFile))return ;
+		
+		try {
+			//
+			// ------------------------------ COPY DOC MODEL 2 RES FOLDER
+			System.out.println("|-------开始准备文档-----");
+			log.append("|-------开始准备文档-----");
+			FileUtil.copyFile(image1, imageTarget1);
+			FileUtil.copyFile(wordFile, resFilePath);
+			
+			// ------------------------------ INSERT PICS 2  BOOKMARKS 
+			System.out.println("|-------开始处理文档-----\n");
+			log.append("|-------开始处理文档-----\n");
+			JacobWordInsert poi = new JacobWordInsert(resFilePath);
+			poi.addImageAtBookMark("tp1", imageTarget1);
+			log.append("PIC 1 SUCCESS!");
+			// ------------------------------ INSERT EXCEL CONTENTS
+			for(String bookmark:bookMarkResource.keySet())
+			{
+				poi.addTextAtBookMark(bookmark, bookMarkResource.get(bookmark));
+			}
+			log.append("insert excel SUCCESS!");
+			
+			
+			
+			// ------------------------------ delete files
+			FileUtil.deleteFile(imageTarget1);
+			poi.closeDocument();
+			poi.closeWord();
+			
+		} catch (Exception e) {
+			log.append(e.getMessage());
+		}finally{
+			log.close();
+		}
+	}
 	
 	public static void sleep(int tim,String note){
 		System.out.println("\n\n\n\n"+note+",程序将在 "+tim+"s后关闭!");

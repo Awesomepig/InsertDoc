@@ -79,6 +79,7 @@ public class ImageUtil {
 
 		encoder.setJPEGEncodeParam(param);
 		encoder.encode(bufferedImage);
+		out.close();
 	} // Example usage
 
 	public static boolean compressImage(File file, String directoryFileName,
@@ -126,7 +127,6 @@ public class ImageUtil {
 					.createJPEGEncoder(fileOutputStream);
 			encoder.encode(bufferedImage);
 			fileOutputStream.close();
-
 			ret = true;
 
 		} catch (Exception e) {

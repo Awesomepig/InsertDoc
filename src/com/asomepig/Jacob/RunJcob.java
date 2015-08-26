@@ -98,7 +98,9 @@ public class RunJcob {
 				Workbook book = Workbook.getWorkbook(exlFile);
 				Sheet st = book.getSheet(0);
 				JxlTools jxl = new JxlTools();
-				
+			if(!ifVersion2)
+			{
+				// 版本1的执行方式，
 				pdfCycle:for (int i = 0; i < pdfArr.length; i++)
 				{
 					String pdfName = pdfArr[i].getName();
@@ -107,7 +109,7 @@ public class RunJcob {
 					////////////////////////////////////////////////
 					System.out.println(pdfArr[i].getName());
 					////////////////////////////////////////////////
-
+					
 					picCycle:for (int j = 0; j < picArr.length; j++) {
 						String picname = picArr[j].getName();
 						if(StringUtil.startWithIgnoreCase(picname,dotno))
@@ -124,6 +126,17 @@ public class RunJcob {
 					this.convertIt(picName,pdfName,bookmarkResource );
 				}
 				
+			}else//版本2的执行方式
+			{
+				gifCycle:for (int i = 0; i < picArr.length; i++)
+				{
+					String picName = picArr[i].getName();
+					String dotno = picName.substring(0, picName.lastIndexOf("."));
+					Map<String,String> bookmarkResource = jxl.getBookMarkResource(st, dotno.toUpperCase(), picArr.length,true);
+					this.convertIt2(picName,bookmarkResource );
+				}
+			}
+				
 				RunJcob.sleep(5,"程序执行成功");
 			
 		} catch (Exception e) {
@@ -138,7 +151,7 @@ public class RunJcob {
 	private boolean getUserChoose() {
 		boolean res = false;
 		Scanner s = new Scanner(System.in); 
-        System.out.println("请选择生成文档的版本（1.两图的版本，2.一张图版本。默认1）\n（1或者2）默认2："); 
+        System.out.print("请选择生成文档的版本（1.两图的版本，2.一张图版本.）\n（1或者2）默认2："); 
         while (true) { 
                 String line = s.nextLine(); 
                 if (line.equals("2") || line.equals(""))
@@ -205,6 +218,7 @@ public class RunJcob {
 			JacobWordInsert poi = new JacobWordInsert(resFilePath);
 			poi.addImageAtBookMark("tp1", imageTarget1);
 			log.append("PIC 1 SUCCESS!");
+			
 			poi.addImageAtBookMark("tp2", imageTarget2);
 			log.append("PIC 2 SUCCESS!");
 			// ------------------------------ INSERT EXCEL CONTENTS
@@ -254,8 +268,11 @@ public class RunJcob {
 			//
 			// ------------------------------ COPY DOC MODEL 2 RES FOLDER
 			System.out.println("|-------开始准备文档-----");
+			System.out.println("|-------开始缩放图片-----");
+//			ImageUtil.compressImage(new File(image1), imageTarget1, 540, 540, false);
+			ImageUtil.resize(new File(image1), new File(imageTarget1), 540, 1);
 			log.append("|-------开始准备文档-----");
-			FileUtil.copyFile(image1, imageTarget1);
+//			FileUtil.copyFile(image1, imageTarget1);
 			FileUtil.copyFile(wordFile, resFilePath);
 			
 			// ------------------------------ INSERT PICS 2  BOOKMARKS 

@@ -39,6 +39,7 @@ public class SimpleLogServiceImpl implements SimpleLogService {
 	}
 
 
+
 	@Override
 	public void append(String content){
 		try {

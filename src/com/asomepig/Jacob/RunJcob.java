@@ -34,11 +34,13 @@ public class RunJcob {
 		String sp = File.separator;
 		String rootPath = System.getProperty("user.dir");
 		String pics = rootPath+sp+"pic"+sp+"pics"+sp;
+		String pics2 = rootPath+sp+"pic"+sp+"pics2"+sp;
 		String pdfs = rootPath+sp+"pic"+sp+"pdf"+sp;
 		String exl = rootPath+sp+"pic"+sp+"excel"+sp;
 		// 获取图片和pdf文件夹,比较列表
 		try {
 			File pcps = new File(pics);
+			File pcps2 = new File(pics2);
 			File pfps = new File(pdfs);
 			File exls = new File(exl);
 			// 1.程序先决条件判断
@@ -49,12 +51,20 @@ public class RunJcob {
 				return ;
 			}
 			File[] picArr = pcps.listFiles();
+			File[] picArr2 = null;
 			File[] pdfArr = null;
 			File[] exlArr = exls.listFiles();
 		
 		/////////////////////////////////////=============两图版本的判断需求，单图版本不需要============////////////////////////////////////////
 				if(!ifVersion2)
 				{
+					if(!pcps2.isDirectory())
+						
+					{
+						System.out.println("pdf文件夹 未准备好,程序终止!");
+						RunJcob.sleep(3,"程序执行失败");
+						return ;
+					}
 					if(!pfps.isDirectory())
 	
 					{
@@ -62,11 +72,12 @@ public class RunJcob {
 						RunJcob.sleep(3,"程序执行失败");
 						return ;
 					}
+					picArr2 = pcps2.listFiles();
 					pdfArr = pfps.listFiles();
-					if(picArr.length!= pdfArr.length)
+					if(picArr.length!= pdfArr.length || pdfArr.length != picArr2.length)
 					{
 						System.out.println("图片数量与pdf数量不匹配,程序终止!");
-						System.out.println("图片数:"+picArr.length+"  ; pdf数:"+pdfArr.length);
+						System.out.println("图片数pic目录:"+picArr.length+"图片数pics目录:"+picArr2.length+"  ; pdf数:"+pdfArr.length);
 						RunJcob.sleep(5,"程序执行失败");
 						return ;
 					}else{
@@ -106,6 +117,7 @@ public class RunJcob {
 					String pdfName = pdfArr[i].getName();
 					String dotno = pdfName.substring(0, pdfName.lastIndexOf("."));
 					String picName = "";
+					String picName2 = "";
 					////////////////////////////////////////////////
 					System.out.println(pdfArr[i].getName());
 					////////////////////////////////////////////////
@@ -119,11 +131,23 @@ public class RunJcob {
 						}
 					}
 					if(picName.equals("")){
-						System.err.println(dotno+"的图片不存在!");
+						System.err.println(dotno+"的图片pics目录下不存在!");
 						continue pdfCycle;
 					}
-					Map<String,String> bookmarkResource = jxl.getBookMarkResource(st, dotno.toUpperCase(), pdfArr.length,true);
-					this.convertIt(picName,pdfName,bookmarkResource );
+					picCycle2:for (int j = 0; j < picArr2.length; j++) {
+						String picname = picArr2[j].getName();
+						if(StringUtil.startWithIgnoreCase(picname,dotno))
+						{
+							picName2 = picname;
+							break picCycle2;
+						}
+					}
+					if(picName2.equals("")){
+						System.err.println(dotno+"的图片pics2目录下不存在!");
+						continue pdfCycle;
+					}
+					Map<String,String> bookmarkResource = jxl.getBookMarkResource(st, dotno.toUpperCase(), pdfArr.length,false);
+					this.convertIt(picName,picName2,pdfName,bookmarkResource );
 				}
 				
 			}else//版本2的执行方式
@@ -167,7 +191,7 @@ public class RunJcob {
         } 
 		return res;
 	}
-	public void convertIt(String picName,String pdfName,Map<String,String> bookMarkResource){
+	public void convertIt(String picName,String picName2,String pdfName,Map<String,String> bookMarkResource){
 		String sp = File.separator;
 		SimpleLogService log = new SimpleLogServiceImpl();
 		String rootPath = System.getProperty("user.dir");
@@ -179,12 +203,15 @@ public class RunJcob {
 		
 		String pdfPath = pic+"pdf"+sp+pdfName;
 		String image1 = pic+"pics"+sp+picName;
+		String image3 = pic+"pics2"+sp+picName2;
 		String image2 = pic+"pdf2pics"+sp+pdfNameWithoutSub+".png";
 		String imageTarget1 = target+picName;
+		String imageTarget3 = target+picName2;
 		String imageTarget2 = target+pdfNameWithoutSub+".png";
-		String wordFile = source+"1.doc";
+		String wordFile = source+"3.doc";
 		String resFilePath = target+pdfNameWithoutSub+".doc";
 		if(!FileUtil.ifFileExists(image1))return ;
+		if(!FileUtil.ifFileExists(image3))return ;
 		if(!FileUtil.ifFileExists(pdfPath))return ;
 		if(!FileUtil.ifFileExists(wordFile))return ;
 		
@@ -201,15 +228,15 @@ public class RunJcob {
 			//------------------------------- ZOOM PICS
 			System.out.println("|-------开始缩放图片-----\n");
 			log.append("|-------开始缩放图片-----\n");
-//			ImageUtil.compressImage(new File(image2), imageTarget2, 680, 850, false);
-//			ImageUtil.compressImage(new File(image2), imageTarget2, 2040, 2650, true);
+			ImageUtil.resize(new File(image1), new File(imageTarget1), 310, 1);
 			ImageUtil.compressImage(new File(image2), imageTarget2, 2343, 3113, false);
 			System.out.println("|-------缩放图片完成-----\n");
 			log.append("|-------缩放图片完成-----\n");
 			// ------------------------------ COPY DOC MODEL 2 RES FOLDER
 			System.out.println("|-------开始准备文档-----");
 			log.append("|-------开始准备文档-----");
-			FileUtil.copyFile(image1, imageTarget1);
+//			FileUtil.copyFile(image1, imageTarget1);
+			FileUtil.copyFile(image3, imageTarget3);
 			FileUtil.copyFile(wordFile, resFilePath);
 			
 			// ------------------------------ INSERT PICS 2  BOOKMARKS 
@@ -219,8 +246,13 @@ public class RunJcob {
 			poi.addImageAtBookMark("tp1", imageTarget1);
 			log.append("PIC 1 SUCCESS!");
 			
+			poi.addImageAtBookMark("tp3", imageTarget3);
+			log.append("PIC 3 SUCCESS!");
+			
 			poi.addImageAtBookMark("tp2", imageTarget2);
 			log.append("PIC 2 SUCCESS!");
+			
+			//poi.addTextAtBookMark("wz1", "insert by java!");
 			// ------------------------------ INSERT EXCEL CONTENTS
 			for(String bookmark:bookMarkResource.keySet())
 			{
@@ -236,6 +268,7 @@ public class RunJcob {
 			FileUtil.deleteFile(image2);
 			FileUtil.deleteFile(imageTarget1);
 			FileUtil.deleteFile(imageTarget2);
+			FileUtil.deleteFile(imageTarget3);
 			poi.closeDocument();
 			poi.closeWord();
 			
@@ -310,6 +343,7 @@ public class RunJcob {
 					System.out.println(i);	
 					Thread.sleep(1000);
 				}
+				System.out.println("程序结束！");
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 		}

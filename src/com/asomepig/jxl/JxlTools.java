@@ -43,8 +43,8 @@ public class JxlTools {
 			// ////////////////////////------------ 区分版本1，2，设置不同的值----------------//////////////////////////
 			if(!ifVersion2)
 			{
-				int[] colXNumber = {0,1,2,3,6,7,8,10,11,12,13,14,15,16};
-				String[] bookmarkName = {"A10","B10","C10","D10","G10","H10","I10","K10","L10","M10","N10","O10","P10","Q10"};
+				int[] colXNumber = {0,1,2,3,6,7,8,10,11,12,13,14,15,16,17};
+				String[] bookmarkName = {"A10","B10","C10","D10","G10","H10","I10","K10","L10","M10","N10","O10","P10","Q10","R10"};
 				for (int i = 0; i < bookmarkName.length; i++) {
 					String curCellContent = StringUtil.toStr(st.getCell(colXNumber[i], LotNoLineNumber).getContents());
 					map.put(bookmarkName[i], curCellContent);

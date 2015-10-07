@@ -91,7 +91,7 @@ public class JxlTools {
 	public void devideExcel(File exlFile, String targetFolder,File modelFile) throws RowsExceededException, WriteException {
 		//1、获取excel
 		Workbook book;
-		Map<String,List<String[]>> source = new HashMap<String,List<String[]>>();
+		Map<String,String[][]> source = new HashMap<String,String[][]>();
 		try {
 			book = Workbook.getWorkbook(exlFile);
 			Sheet st = book.getSheet(0);
@@ -111,15 +111,17 @@ public class JxlTools {
 				{
 					if(!cell1.getContents().trim().equals(""))
 					{
-						if(!ddh.equals(""))
-							source.put(ddh, list);
+						if(!ddh.equals("")){
+							String[][] a = new String[list.size()][];
+							source.put(ddh, list.toArray(a));
+						}
 						ddh = cell1.getContents().trim();
 						list.clear();
 					}else if(ddh.equals(""))
 					{
 						continue cycle1;
 					}
-					String[] xxx = new String[7];
+					String[] xxx = new String[8];
 					// 获取2-8的参数放到list中
 					for(int x = 2;x<10;x++)
 					{
@@ -136,7 +138,8 @@ public class JxlTools {
 			System.out.println("----关闭excel数据源");
 			// 开始根据source循环
 			for (String key:source.keySet()) {
-				List<String[]> cols = source.get(key);
+//				List<String[]> cols = new ArrayList<String[]>(); 
+				String[][] carr = source.get(key);
 				//1.copyFile
 				String tarPath = targetFolder+key.trim()+".xls";
 				System.out.println("----建立目标文件"+tarPath);
@@ -145,15 +148,19 @@ public class JxlTools {
 				WritableSheet ts = tarBook.getSheet(0);
 				// 添加订单号
 				setCellContent(ts, key, 0, 1);
+				String scbh = "";
 				// 循环行
-				for (int i = 0; i < cols.size(); i++) {
-					String[] curLine = cols.get(i);
+				for (int i = 0; i < carr.length; i++) {
+					String[] curLine = carr[i];
 					// 循环列
-					for (int j = 0; j < curLine.length; j++) {
+					scbh += curLine[0]+",";
+					for (int j = 1; j < curLine.length; j++) {
 						setCellContent(ts, curLine[j], j,i+3);
 					}
 					System.out.println("添加了第"+(i+1)+"行");
 				}
+				// 添加生产编号
+				setCellContent(ts, scbh.substring(0, scbh.length()-1), 0, 3);
 				System.out.println("关闭了workbook："+tarPath);
 				tarBook.write();
 				tarBook.close();

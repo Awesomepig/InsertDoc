@@ -7,6 +7,7 @@ import java.util.Scanner;
 
 import jxl.Sheet;
 import jxl.Workbook;
+import jxl.write.WriteException;
 
 import com.asomepig.image.ImageUtil;
 import com.asomepig.jpedal.JpedalUtil;
@@ -25,12 +26,45 @@ public class RunJcob {
 	public static void main(String[] args) throws IOException {
 
 		RunJcob r = new RunJcob();
-		r.startIt();
+		int handleCode = getUserChoose();
+		if(handleCode==2)
+			r.startWordProcess(true);
+		else if(handleCode==1)
+			r.startWordProcess(false);
+		else if(handleCode==3)
+			r.startExcelProcess();
+			
 		
 	}
-	public void startIt(){
-		boolean ifVersion2 = false;
-		ifVersion2 = this.getUserChoose();
+	private void startExcelProcess() {
+		// 0、初始化参数，源目录，目标目录
+		String sp = File.separator;
+		String rootPath = System.getProperty("user.dir");
+		String exlFolder = rootPath+sp+"exl";
+		String targetFolder = rootPath+sp+"target";
+		new File(targetFolder).mkdir();
+		
+		// 1、获取目录，
+		File ff = new File(exlFolder);
+		if(!ff.isDirectory())RunJcob.sleep(3,"excel目录exl/不存在！");
+		// 2、获取excel，
+		if(ff.listFiles().length<1)RunJcob.sleep(3,"excel文件不存在！");
+		File ef = ff.listFiles()[0];
+		File sourcesFile = new File(rootPath+sp+"source"+sp+"model.xls");
+		if(!sourcesFile.exists())RunJcob.sleep(3,"excel模板文件source/model.xls不存在！");
+		// 3、使用jxl service的方法操作。
+		JxlTools jxl = new JxlTools();
+		try {
+			jxl.devideExcel(ef,targetFolder+sp,sourcesFile);
+		} catch (WriteException e) {
+			System.err.println("解析excel出错！");
+		}
+	}
+	/**
+	 * 启动word操作的预处理
+	 * @param ifVersion2
+	 */
+	public void startWordProcess(boolean ifVersion2){
 		String sp = File.separator;
 		String rootPath = System.getProperty("user.dir");
 		String pics = rootPath+sp+"pic"+sp+"pics"+sp;
@@ -169,28 +203,14 @@ public class RunJcob {
 		}
 	}
 	
+
 	/**
-	 * @return true版本2，false版本1
+	 * 开始word转换方法
+	 * @param picName
+	 * @param picName2
+	 * @param pdfName
+	 * @param bookMarkResource
 	 */
-	private boolean getUserChoose() {
-		boolean res = false;
-		Scanner s = new Scanner(System.in); 
-        System.out.print("请选择生成文档的版本（1.两图的版本，2.一张图版本.）\n（1或者2）默认2："); 
-        while (true) { 
-                String line = s.nextLine(); 
-                if (line.equals("2") || line.equals(""))
-                {
-                	res = true;
-                	System.out.println("您已选择版本>>>2"); 
-                	break; 
-                }else
-                {
-                	System.out.println("您已选择版本>>>1"); 
-                	break; 
-                }
-        } 
-		return res;
-	}
 	public void convertIt(String picName,String picName2,String pdfName,Map<String,String> bookMarkResource){
 		String sp = File.separator;
 		SimpleLogService log = new SimpleLogServiceImpl();
@@ -279,7 +299,11 @@ public class RunJcob {
 		}
 	}
 	
-	
+	/**
+	 * 单图片word处理方法
+	 * @param picName
+	 * @param bookMarkResource
+	 */
 	public void convertIt2(String picName,Map<String,String> bookMarkResource){
 		String sp = File.separator;
 		SimpleLogService log = new SimpleLogServiceImpl();
@@ -334,7 +358,40 @@ public class RunJcob {
 			log.close();
 		}
 	}
+
+///////////////////////////////////////用户界面处理方法////////////////////////////////////////////////	
 	
+	/**
+	 * 获取用户输入操作
+	 * @return true版本2，false版本1
+	 */
+	private static int getUserChoose() {
+		Scanner s = new Scanner(System.in); 
+        System.out.print("请选择生成文档的版本（1.两图的版本，2.一张图版本.）或者 3.分割excel \n（1、2或者3）："); 
+        Integer line = StringUtil.toInteger(s.nextLine());
+        while (true) { 
+                if (line<1)
+                {
+                	System.out.println("您输入错误！！！"); 
+                }else if(line>3){
+                	System.out.println("您输入版本超出限制"); 
+                }else
+                {
+                	System.out.println("您已选择版本>>>"+line); 
+                	break; 
+                }
+                System.out.print("请选择生成文档的版本（1.两图的版本，2.一张图版本.）或者 3.分割excel \n（1、2或者3）："); 
+                line = StringUtil.toInteger(s.nextLine());
+        } 
+        s.close();
+		return line;
+	}
+	
+	/**
+	 * 关闭提示界面
+	 * @param tim
+	 * @param note
+	 */
 	public static void sleep(int tim,String note){
 		System.out.println("\n\n\n\n"+note+",程序将在 "+tim+"s后关闭!");
 		try {

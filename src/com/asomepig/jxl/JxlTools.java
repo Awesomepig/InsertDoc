@@ -3,12 +3,26 @@
  */
 package com.asomepig.jxl;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import jxl.Cell;
+import jxl.CellType;
 import jxl.Sheet;
+import jxl.Workbook;
+import jxl.read.biff.BiffException;
+import jxl.write.Label;
+import jxl.write.WritableCell;
+import jxl.write.WritableSheet;
+import jxl.write.WritableWorkbook;
+import jxl.write.WriteException;
+import jxl.write.biff.RowsExceededException;
 
+import com.asomepig.util.FileUtil;
 import com.asomepig.util.StringUtil;
 
 /**
@@ -63,5 +77,111 @@ public class JxlTools {
 		map.put("C6", StringUtil.toStr(st.getCell(2,5).getContents()));
 		
 		return map;
+	}
+
+
+	/**
+	 * 分割excel
+	 * @param exlFile
+	 * @param string
+	 * @param modelFile 模板文件
+	 * @throws WriteException 
+	 * @throws RowsExceededException 
+	 */
+	public void devideExcel(File exlFile, String targetFolder,File modelFile) throws RowsExceededException, WriteException {
+		//1、获取excel
+		Workbook book;
+		Map<String,List<String[]>> source = new HashMap<String,List<String[]>>();
+		try {
+			book = Workbook.getWorkbook(exlFile);
+			Sheet st = book.getSheet(0);
+			System.out.println("----获取excel数据源");
+			// 从第二行开始循环 （1,1）(2,1)--------------------
+			String ddh = "";
+			List<String[]> list = new ArrayList<String[]>();
+			int y = 0;
+//			int[] xs = new int[]{2,3,4,5,6,7,8};
+			cycle1:while(true)
+			{
+				y++;
+				Cell cell1 = st.getCell(1, y);
+				Cell cell2 = st.getCell(2, y);
+				// line 1 judge
+				if(!cell2.getContents().trim().equals(""))
+				{
+					if(!cell1.getContents().trim().equals(""))
+					{
+						if(!ddh.equals(""))
+							source.put(ddh, list);
+						ddh = cell1.getContents().trim();
+						list.clear();
+					}else if(ddh.equals(""))
+					{
+						continue cycle1;
+					}
+					String[] xxx = new String[7];
+					// 获取2-8的参数放到list中
+					for(int x = 2;x<10;x++)
+					{
+						xxx[x-2] = st.getCell(x, y).getContents();
+					}
+					for(String strd:xxx)
+						System.out.print("\t "+strd+",");
+					System.out.println();
+					list.add(xxx);
+				}else
+					break cycle1;
+			}
+			book.close();
+			System.out.println("----关闭excel数据源");
+			// 开始根据source循环
+			for (String key:source.keySet()) {
+				List<String[]> cols = source.get(key);
+				//1.copyFile
+				String tarPath = targetFolder+key.trim()+".xls";
+				System.out.println("----建立目标文件"+tarPath);
+				Workbook sourceBook = Workbook.getWorkbook(modelFile);
+				WritableWorkbook tarBook = Workbook.createWorkbook(new File(tarPath),sourceBook);
+				WritableSheet ts = tarBook.getSheet(0);
+				// 添加订单号
+				setCellContent(ts, key, 0, 1);
+				// 循环行
+				for (int i = 0; i < cols.size(); i++) {
+					String[] curLine = cols.get(i);
+					// 循环列
+					for (int j = 0; j < curLine.length; j++) {
+						setCellContent(ts, curLine[j], j,i+3);
+					}
+					System.out.println("添加了第"+(i+1)+"行");
+				}
+				System.out.println("关闭了workbook："+tarPath);
+				tarBook.write();
+				tarBook.close();
+				sourceBook.close();
+			}
+			
+		} catch (BiffException | IOException e) {
+			System.err.println("导入解析excel错误："+exlFile.getAbsolutePath());
+		}
+		
+	}
+	
+	
+	private void setCellContent(WritableSheet ts,String content,int x,int y){
+		WritableCell wc = ts.getWritableCell(x,y);
+		if(wc.getType() == CellType.LABEL)    
+		{    
+			Label label = (Label)wc;    
+			label.setString(StringUtil.toStr(content));    
+		}else{
+			Label l=new Label(x,y,StringUtil.toStr(content)); 
+			try {
+				ts.addCell(l);
+			} catch (RowsExceededException e) {
+				e.printStackTrace();
+			} catch (WriteException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 }
